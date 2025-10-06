@@ -52,7 +52,45 @@ export interface RSQuestion {
   updated_at: string;
 }
 
-// Debate Session Metadata (not individual debates)
+// Individual Debate Day Records (from Data Explorer API)
+export interface LSDebate {
+  id: number;
+  debate_id: string;
+  debate_date: string;
+  debate_type: string;
+  debate_category: DebateCategory;
+  language: string;
+  time_slot: string | null;
+  lok_sabha: string;
+  session: string;
+  status: DebateStatus;
+  is_downloaded: boolean;
+  file_size_mb: number | null;
+  page_count: number | null;
+  download_attempts: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RSDebate {
+  id: number;
+  debate_id: string;
+  debate_date: string;
+  debate_type: string;
+  debate_category: DebateCategory;
+  language: string;
+  time_slot: string | null;
+  session: string;
+  status: DebateStatus;
+  is_downloaded: boolean;
+  file_size_mb: number | null;
+  page_count: number | null;
+  download_attempts: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy: Debate Session Metadata (not used by explorer, kept for backward compatibility)
 export interface LSDebateSession {
   id: number;
   institution: 'lok_sabha';
@@ -132,7 +170,9 @@ export interface DebateFilters {
   lok_sabha?: string;
   session?: string;
   debate_category?: DebateCategory;
-  is_complete?: boolean;
+  status?: DebateStatus;
+  date_from?: string;
+  date_to?: string;
   sort_by?: string;
   order?: 'asc' | 'desc';
   limit?: number;
@@ -154,6 +194,7 @@ export interface DebatesMetadata {
   lok_sabhas?: string[];
   sessions: string[];
   debate_categories: DebateCategory[];
+  statuses: DebateStatus[];
   date_range: {
     min: string;
     max: string;
@@ -169,18 +210,18 @@ export interface QuestionsStatistics {
 }
 
 export interface DebatesStatistics {
-  total_sessions: number;
-  total_debate_days: number;
-  total_debates_discovered: number;
-  total_debates_downloaded: number;
-  complete_sessions: number;
+  total_debates: number;
+  completed: number;
+  pending: number;
+  failed: number;
+  not_available: number;
 }
 
 export interface ExplorerResponse<T> {
   status: string;
   data: {
     questions?: T[];
-    debate_sessions?: T[];
+    debates?: T[];
     pagination: Pagination;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

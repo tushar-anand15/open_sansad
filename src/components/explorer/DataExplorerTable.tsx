@@ -40,13 +40,14 @@ import {
   ExplorerMode,
   LSQuestion,
   RSQuestion,
-  LSDebateSession,
-  RSDebateSession,
+  LSDebate,
+  RSDebate,
   QuestionFilters,
   DebateFilters,
   QuestionsMetadata,
   DebatesMetadata,
   Pagination,
+  DebateStatus,
 } from '../../types/explorer.types';
 
 interface DataExplorerTableProps {
@@ -65,7 +66,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
   const { enqueueSnackbar } = useSnackbar();
   
   // Data state
-  const [data, setData] = useState<(LSQuestion | RSQuestion | LSDebateSession | RSDebateSession)[]>([]);
+  const [data, setData] = useState<(LSQuestion | RSQuestion | LSDebate | RSDebate)[]>([]);
   const [metadata, setMetadata] = useState<QuestionsMetadata | DebatesMetadata | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(false);
@@ -74,7 +75,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
   const [filters, setFilters] = useState<QuestionFilters | DebateFilters>({
     limit: 50,
     offset: 0,
-    sort_by: mode === 'questions' ? 'date' : 'lok_sabha_number',
+    sort_by: mode === 'questions' ? 'date' : 'debate_date',
     order: 'desc',
   });
 
@@ -109,10 +110,10 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
       } else {
         if (institution === 'lok_sabha') {
           response = await parliamentService.exploreLSDebates(filters as DebateFilters);
-          setData(response.data.debate_sessions || []);
+          setData(response.data.debates || []);
         } else {
           response = await parliamentService.exploreRSDebates(filters as DebateFilters);
-          setData(response.data.debate_sessions || []);
+          setData(response.data.debates || []);
         }
       }
 
@@ -172,7 +173,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
     setFilters({
       limit: 50,
       offset: 0,
-      sort_by: mode === 'questions' ? 'date' : 'lok_sabha_number',
+      sort_by: mode === 'questions' ? 'date' : 'debate_date',
       order: 'desc',
     });
   };
@@ -348,26 +349,22 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
               </Box>
             )}
 
-            {/* Is Complete (Debates mode) */}
-            {mode === 'debates' && (
+            {/* Status (Debates mode) */}
+            {mode === 'debates' && debatesMetadata?.statuses && (
               <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Status</InputLabel>
                   <Select
-                    value={(filters as DebateFilters).is_complete === undefined ? '' : (filters as DebateFilters).is_complete ? 'true' : 'false'}
-                    onChange={(e) => {
-                      const val = e.target.value as string;
-                      if (val === '') {
-                        handleFilterChange('is_complete', undefined);
-                      } else {
-                        handleFilterChange('is_complete', val === 'true');
-                      }
-                    }}
+                    value={(filters as DebateFilters).status || ''}
+                    onChange={(e) => handleFilterChange('status', e.target.value)}
                     label="Status"
                   >
                     <MenuItem value="">All</MenuItem>
-                    <MenuItem value="true">Complete</MenuItem>
-                    <MenuItem value="false">Incomplete</MenuItem>
+                    {debatesMetadata.statuses.map((status) => (
+                      <MenuItem key={status} value={status}>
+                        {status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Box>
@@ -409,11 +406,10 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     </>
                   ) : (
                     <>
-                      <MenuItem value="lok_sabha_number">LS Number</MenuItem>
-                      <MenuItem value="session_number">Session</MenuItem>
-                      <MenuItem value="total_debate_days">Debate Days</MenuItem>
-                      <MenuItem value="debates_discovered">Discovered</MenuItem>
+                      <MenuItem value="debate_date">Debate Date</MenuItem>
                       <MenuItem value="created_at">Created</MenuItem>
+                      <MenuItem value="updated_at">Updated</MenuItem>
+                      <MenuItem value="status">Status</MenuItem>
                     </>
                   )}
                 </Select>
@@ -539,9 +535,28 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
     );
   };
 
-  // Render Debates Table (Session Metadata)
+  // Render Debates Table (Individual Debate Records)
   const renderDebatesTable = () => {
-    const debateSessions = data as (LSDebateSession | RSDebateSession)[];
+    const debates = data as (LSDebate | RSDebate)[];
+
+    const getStatusColor = (status: DebateStatus) => {
+      switch (status) {
+        case 'completed':
+          return 'success';
+        case 'pending':
+          return 'warning';
+        case 'failed':
+          return 'error';
+        case 'not_available':
+          return 'default';
+        default:
+          return 'default';
+      }
+    };
+
+    const getStatusLabel = (status: DebateStatus) => {
+      return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ');
+    };
 
     return (
       <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
@@ -552,22 +567,20 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                 <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>LS</TableCell>
               )}
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Session</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Date</TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Category</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Date Range</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Language</TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
-                Debate Days
-              </TableCell>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
-                Discovered
+                Status
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
                 Downloaded
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
-                Progress
+                File Size
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
-                Complete
+                Pages
               </TableCell>
             </TableRow>
           </TableHead>
@@ -578,14 +591,14 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                   <CircularProgress sx={{ color: themeColors.primary }} />
                 </TableCell>
               </TableRow>
-            ) : debateSessions.length === 0 ? (
+            ) : debates.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={institution === 'lok_sabha' ? 9 : 8} align="center" sx={{ py: 8 }}>
-                  <Typography color="text.secondary">No debate sessions found</Typography>
+                  <Typography color="text.secondary">No debates found</Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              debateSessions.map((d) => (
+              debates.map((d) => (
                 <TableRow
                   key={d.id}
                   hover
@@ -596,7 +609,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     },
                   }}
                 >
-                  {institution === 'lok_sabha' && (
+                  {institution === 'lok_sabha' && 'lok_sabha' in d && (
                     <TableCell>
                       <Typography variant="body2" fontWeight={600}>
                         {d.lok_sabha}
@@ -607,6 +620,9 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     <Typography variant="body2" fontWeight={600}>
                       {d.session}
                     </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{d.debate_date}</Typography>
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -620,40 +636,30 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" sx={{ maxWidth: 200 }}>
-                      {d.date_range_formatted || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2" fontWeight={600}>
-                      {d.total_debate_days}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2">{d.debates_discovered}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Typography variant="body2">{d.debates_downloaded}</Typography>
+                    <Typography variant="body2">{d.language.toUpperCase()}</Typography>
                   </TableCell>
                   <TableCell align="center">
                     <Chip
-                      label={`${d.completion_percentage.toFixed(1)}%`}
+                      label={getStatusLabel(d.status)}
                       size="small"
-                      color={
-                        d.completion_percentage === 100
-                          ? 'success'
-                          : d.completion_percentage > 0
-                          ? 'warning'
-                          : 'default'
-                      }
+                      color={getStatusColor(d.status)}
+                      sx={{ fontWeight: 600 }}
                     />
                   </TableCell>
                   <TableCell align="center">
-                    {d.is_complete ? (
+                    {d.is_downloaded ? (
                       <CheckCircle sx={{ color: themeColors.primary, fontSize: 20 }} />
                     ) : (
                       <Cancel sx={{ color: 'text.disabled', fontSize: 20 }} />
                     )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2">
+                      {d.file_size_mb ? `${d.file_size_mb.toFixed(1)} MB` : '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2">{d.page_count || '-'}</Typography>
                   </TableCell>
                 </TableRow>
               ))

@@ -13,8 +13,8 @@ import { PaginatedResponse } from '../types/api.types';
 import {
   LSQuestion,
   RSQuestion,
-  LSDebateSession,
-  RSDebateSession,
+  LSDebate,
+  RSDebate,
   QuestionFilters,
   DebateFilters,
   ExplorerResponse,
@@ -148,14 +148,14 @@ export const parliamentService = {
     return response.data;
   },
 
-  // Lok Sabha Debates Explorer (Session Metadata)
-  exploreLSDebates: async (filters?: DebateFilters): Promise<ExplorerResponse<LSDebateSession>> => {
+  // Lok Sabha Debates Explorer (Individual Debate Records)
+  exploreLSDebates: async (filters?: DebateFilters): Promise<ExplorerResponse<LSDebate>> => {
     const response = await axios.get('/explorer/ls/debates/', { params: filters });
     return response.data;
   },
 
-  // Rajya Sabha Debates Explorer (Session Metadata)
-  exploreRSDebates: async (filters?: DebateFilters): Promise<ExplorerResponse<RSDebateSession>> => {
+  // Rajya Sabha Debates Explorer (Individual Debate Records)
+  exploreRSDebates: async (filters?: DebateFilters): Promise<ExplorerResponse<RSDebate>> => {
     const response = await axios.get('/explorer/rs/debates/', { params: filters });
     return response.data;
   },

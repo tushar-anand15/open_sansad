@@ -210,25 +210,24 @@ setup_nginx() {
         
         cat > "$NGINX_CONF" <<'NGINX_CONF'
 # OpenSansad Frontend - HTTP Configuration
-# SSL will be added by certbot
+# SSL will be added after certbot verification
 
 upstream nextjs_frontend {
     server 127.0.0.1:3000 fail_timeout=30s max_fails=3;
     keepalive 32;
 }
 
-# Redirect non-www to www
+# Handle both www and non-www for certbot verification
 server {
     listen 80;
     listen [::]:80;
-    server_name opensansad.co.in;
-    return 301 http://www.opensansad.co.in$request_uri;
-}
-
-server {
-    listen 80;
-    listen [::]:80;
-    server_name www.opensansad.co.in;
+    server_name www.opensansad.co.in opensansad.co.in;
+    
+    # Allow certbot to verify both domains
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+        try_files $uri =404;
+    }
     
     # Logging
     access_log /var/log/nginx/opensansad_frontend_access.log combined;
@@ -251,7 +250,6 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
         
-        # Cache static assets
         expires 1y;
         add_header Cache-Control "public, immutable";
         access_log off;
@@ -338,8 +336,9 @@ server {
     # SSL Configuration
     ssl_certificate /etc/letsencrypt/live/www.opensansad.co.in/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/www.opensansad.co.in/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
     
     # Logging
     access_log /var/log/nginx/opensansad_frontend_access.log combined;
@@ -451,7 +450,8 @@ setup_ssl() {
     
     # Check if DNS is resolving
     log_info "Checking DNS resolution for $DOMAIN..."
-    DNS_IP=$(dig +short $DOMAIN | head -1)
+    SERVER_IP=$(curl -s ifconfig.me)
+    DNS_IP=$(dig +short $DOMAIN @8.8.8.8 | head -1)
     
     if [ -z "$DNS_IP" ]; then
         log_warn "DNS is not resolving yet for $DOMAIN"
@@ -459,12 +459,23 @@ setup_ssl() {
         log_info "You can check DNS with: dig $DOMAIN"
         log_info "Frontend is accessible via HTTP at: http://$DOMAIN"
         return
-    else
-        log_info "DNS resolving to: $DNS_IP"
     fi
     
+    log_info "Server IP: $SERVER_IP"
+    log_info "DNS resolving to: $DNS_IP"
+    
+    if [ "$DNS_IP" != "$SERVER_IP" ]; then
+        log_warn "DNS is pointing to $DNS_IP but this server is $SERVER_IP"
+        log_warn "Update your DNS A record to point to: $SERVER_IP"
+        log_warn "Frontend is accessible via HTTP at: http://$DOMAIN"
+        return
+    fi
+    
+    # Create webroot directory for certbot
+    mkdir -p /var/www/html/.well-known/acme-challenge
+    
     log_info "Obtaining SSL certificate from Let's Encrypt..."
-    if certbot --nginx -d $DOMAIN -d $DOMAIN_ALT --non-interactive --agree-tos --email tusharanand1594@gmail.com --redirect; then
+    if certbot certonly --webroot -w /var/www/html -d $DOMAIN -d $DOMAIN_ALT --non-interactive --agree-tos --email tusharanand1594@gmail.com; then
         log_info "SSL certificate installed successfully"
         
         # Now update to full SSL config
@@ -473,7 +484,8 @@ setup_ssl() {
     else
         log_warn "SSL certificate installation failed"
         log_warn "Frontend is still accessible via HTTP at: http://$DOMAIN"
-        log_info "Run this script again after DNS propagates"
+        log_info "Make sure DNS points to this server: $SERVER_IP"
+        log_info "Then run: sudo certbot certonly --webroot -w /var/www/html -d $DOMAIN -d $DOMAIN_ALT"
     fi
 }
 
