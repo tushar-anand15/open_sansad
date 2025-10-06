@@ -183,6 +183,7 @@ export interface ExplorerResponse<T> {
     debate_sessions?: T[];
     pagination: Pagination;
   };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   applied_filters?: Record<string, any>;
   note?: string;
 }

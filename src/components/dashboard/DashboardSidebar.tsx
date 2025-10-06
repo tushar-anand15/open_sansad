@@ -48,7 +48,6 @@ export default function DashboardSidebar({
   title,
   subtitle,
   items,
-  collapsed,
   onCollapse,
   isMobile = false,
   currentPath,

@@ -30,15 +30,21 @@ const LoginSchema = Yup.object().shape({
     .min(8, 'Password must be at least 8 characters'),
 });
 
+interface LoginFormValues {
+  username: string;
+  password: string;
+}
+
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
   const { enqueueSnackbar } = useSnackbar();
   const [showPassword, setShowPassword] = useState(false);
 
-  const methods = useForm({
-    resolver: yupResolver(LoginSchema),
-    mode: 'onBlur', // Validate on blur for better UX
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const methods = useForm<LoginFormValues>({
+    resolver: yupResolver(LoginSchema) as any,
+    mode: 'onBlur',
     defaultValues: {
       username: '',
       password: '',
@@ -51,17 +57,18 @@ export default function LoginPage() {
     formState: { errors, isSubmitting },
   } = methods;
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: LoginFormValues) => {
     try {
       await login({ username: data.username, password: data.password });
       enqueueSnackbar('Login successful!', { variant: 'success' });
       router.push('/dashboard');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const err = error as { response?: { data?: { error?: string; detail?: string } }; message?: string };
       const errorMessage = 
-        error.response?.data?.error || 
-        error.response?.data?.detail ||
-        error?.message || 
+        err.response?.data?.error || 
+        err.response?.data?.detail ||
+        err?.message || 
         'Invalid credentials';
       setError('root.serverError', { message: errorMessage });
       enqueueSnackbar(errorMessage, { variant: 'error' });

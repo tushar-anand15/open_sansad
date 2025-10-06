@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Box, Stack, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 interface EmptyStateProps {
   title: string;

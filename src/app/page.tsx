@@ -169,7 +169,7 @@ export default function HomePage() {
               <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 800, mx: 'auto', lineHeight: 1.8 }}>
                 OpenSansad is a next-generation platform that democratizes access to parliamentary information.
                 Using advanced AI and RAG (Retrieval-Augmented Generation) technology, we make it easy for
-                citizens, researchers, journalists, and students to explore and understand India's parliamentary
+                citizens, researchers, journalists, and students to explore and understand India&apos;s parliamentary
                 proceedings, debates, questions, and bills.
               </Typography>
             </Box>

@@ -1,7 +1,6 @@
 'use client';
 
-import { Container, Typography, Box, Card, CardContent, Stack, Chip, Grid, Divider } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Container, Typography, Box, Card, CardContent, Stack, Chip, Divider } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { getOpenSansadNavigation } from '../../../config/navigation';
@@ -9,7 +8,6 @@ import { useAuth } from '../../../hooks/useAuth';
 import { Person, Email, Business, CalendarToday, Api, CloudDownload } from '@mui/icons-material';
 
 export default function ProfilePage() {
-  const theme = useTheme();
   const router = useRouter();
   const { logout, user, profile } = useAuth();
 

@@ -24,6 +24,16 @@ import { FormProvider, RHFTextField } from '../../components/hook-form';
 import AuthLayout from '../../layouts/auth/AuthLayout';
 import { USER_TYPES } from '../../config/constants';
 
+interface SignupFormValues {
+  username: string;
+  email: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  user_type: string;
+  organization?: string;
+}
+
 const SignupSchema = Yup.object().shape({
   username: Yup.string()
     .min(3, 'Username must be at least 3 characters')
@@ -40,13 +50,16 @@ const SignupSchema = Yup.object().shape({
     .matches(/[0-9]/, 'Password must contain at least one number')
     .required('Password is required'),
   first_name: Yup.string()
+    .optional()
     .min(2, 'Must be at least 2 characters')
     .max(50, 'Must be less than 50 characters'),
   last_name: Yup.string()
+    .optional()
     .min(2, 'Must be at least 2 characters')
     .max(50, 'Must be less than 50 characters'),
   user_type: Yup.string().required('User type is required'),
   organization: Yup.string()
+    .optional()
     .max(100, 'Organization name must be less than 100 characters'),
 });
 
@@ -56,9 +69,10 @@ export default function SignupPage() {
   const { enqueueSnackbar } = useSnackbar();
   const [showPassword, setShowPassword] = useState(false);
 
-  const methods = useForm({
-    resolver: yupResolver(SignupSchema),
-    mode: 'onBlur', // Validate on blur for better UX
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const methods = useForm<SignupFormValues>({
+    resolver: yupResolver(SignupSchema) as any,
+    mode: 'onBlur',
     defaultValues: {
       username: '',
       email: '',
@@ -76,19 +90,20 @@ export default function SignupPage() {
     formState: { errors, isSubmitting },
   } = methods;
 
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: SignupFormValues) => {
     try {
       await register(data);
       enqueueSnackbar('Account created successfully! Welcome to OpenSansad.', { variant: 'success' });
       setTimeout(() => {
         router.push('/dashboard');
       }, 1000);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
+      const err = error as { response?: { data?: { error?: string; detail?: string } }; message?: string };
       const errorMessage = 
-        error.response?.data?.error ||
-        error.response?.data?.detail ||
-        error?.message ||
+        err.response?.data?.error ||
+        err.response?.data?.detail ||
+        err?.message ||
         'Registration failed';
       setError('root.serverError', { message: errorMessage });
       enqueueSnackbar(errorMessage, { variant: 'error' });

@@ -1,7 +1,6 @@
 'use client';
 
 import { Container, Typography, Box, Card, CardContent } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../../components/dashboard/DashboardLayout';
 import { getOpenSansadNavigation } from '../../../config/navigation';
@@ -10,7 +9,6 @@ import EmptyState from '../../../components/shared/EmptyState';
 import { Settings } from '@mui/icons-material';
 
 export default function SettingsPage() {
-  const theme = useTheme();
   const router = useRouter();
   const { logout } = useAuth();
 

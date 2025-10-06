@@ -1,5 +1,4 @@
-import { alpha } from '@mui/material/styles';
-import { Shadows } from '@mui/material/styles/shadows';
+import { alpha, Shadows } from '@mui/material/styles';
 
 // Custom shadows for OpenSansad
 export default function shadows(mode: 'light' | 'dark'): Shadows {

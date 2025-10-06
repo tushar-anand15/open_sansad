@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Paper,
@@ -20,9 +20,7 @@ import {
   Chip,
   Typography,
   Stack,
-  Grid,
   CircularProgress,
-  Alert,
   alpha,
   IconButton,
   Tooltip,
@@ -31,7 +29,6 @@ import {
   Search,
   FilterList,
   Refresh,
-  Download,
   PictureAsPdf,
   CheckCircle,
   Cancel,
@@ -84,29 +81,19 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true);
 
-  // Load metadata on mount
-  useEffect(() => {
-    loadMetadata();
-  }, [institution, mode]);
-
-  // Load data when filters change
-  useEffect(() => {
-    loadData();
-  }, [filters, institution, mode]);
-
-  const loadMetadata = async () => {
+  const loadMetadata = useCallback(async () => {
     try {
       const response = mode === 'questions'
         ? await parliamentService.getQuestionsMetadata(institution)
         : await parliamentService.getDebatesMetadata(institution);
       setMetadata(response.metadata);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading metadata:', error);
       enqueueSnackbar('Failed to load filter options', { variant: 'error' });
     }
-  };
+  }, [institution, mode, enqueueSnackbar]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       let response;
@@ -130,15 +117,26 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
       }
 
       setPagination(response.data.pagination);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading data:', error);
-      enqueueSnackbar(error.response?.data?.error || 'Failed to load data', { variant: 'error' });
+      const err = error as { response?: { data?: { error?: string } } };
+      enqueueSnackbar(err.response?.data?.error || 'Failed to load data', { variant: 'error' });
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, institution, mode, enqueueSnackbar]);
 
-  const handleFilterChange = (key: string, value: any) => {
+  // Load metadata on mount
+  useEffect(() => {
+    loadMetadata();
+  }, [loadMetadata]);
+
+  // Load data when filters change
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleFilterChange = (key: string, value: string | number | boolean | undefined) => {
     setFilters({
       ...filters,
       [key]: value,
@@ -236,10 +234,10 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
         </Box>
 
         {showFilters && (
-          <Grid container spacing={2}>
+          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 2 }}>
             {/* Search (Questions only) */}
             {mode === 'questions' && (
-              <Grid item xs={12}>
+              <Box sx={{ gridColumn: 'span 12' }}>
                 <Stack direction="row" spacing={1}>
                   <TextField
                     fullWidth
@@ -263,12 +261,12 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     Search
                   </Button>
                 </Stack>
-              </Grid>
+              </Box>
             )}
 
             {/* Lok Sabha filter (LS only) */}
             {institution === 'lok_sabha' && questionsMetadata?.lok_sabhas && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Lok Sabha</InputLabel>
                   <Select
@@ -284,12 +282,12 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Session filter */}
             {metadata && 'sessions' in metadata && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Session</InputLabel>
                   <Select
@@ -305,12 +303,12 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Question Type (Questions mode) */}
             {mode === 'questions' && questionsMetadata?.question_types && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Type</InputLabel>
                   <Select
@@ -326,12 +324,12 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Debate Category (Debates mode) */}
             {mode === 'debates' && debatesMetadata?.debate_categories && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Category</InputLabel>
                   <Select
@@ -347,17 +345,24 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     ))}
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Is Complete (Debates mode) */}
             {mode === 'debates' && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Status</InputLabel>
                   <Select
                     value={(filters as DebateFilters).is_complete === undefined ? '' : (filters as DebateFilters).is_complete ? 'true' : 'false'}
-                    onChange={(e) => handleFilterChange('is_complete', e.target.value === '' ? undefined : e.target.value === 'true')}
+                    onChange={(e) => {
+                      const val = e.target.value as string;
+                      if (val === '') {
+                        handleFilterChange('is_complete', undefined);
+                      } else {
+                        handleFilterChange('is_complete', val === 'true');
+                      }
+                    }}
                     label="Status"
                   >
                     <MenuItem value="">All</MenuItem>
@@ -365,12 +370,12 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     <MenuItem value="false">Incomplete</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Has PDF (Questions only) */}
             {mode === 'questions' && (
-              <Grid item xs={12} sm={6} md={2.4}>
+              <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
                 <FormControl fullWidth size="small" sx={{ minWidth: 120 }}>
                   <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>PDF</InputLabel>
                   <Select
@@ -383,11 +388,11 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     <MenuItem value="false">No PDF</MenuItem>
                   </Select>
                 </FormControl>
-              </Grid>
+              </Box>
             )}
 
             {/* Sort By */}
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
               <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
                 <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Sort By</InputLabel>
                 <Select
@@ -413,10 +418,10 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                   )}
                 </Select>
               </FormControl>
-            </Grid>
+            </Box>
 
             {/* Sort Order */}
-            <Grid item xs={12} sm={6} md={2.4}>
+            <Box sx={{ gridColumn: { xs: 'span 12', sm: 'span 6', md: 'span 2' } }}>
               <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
                 <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Order</InputLabel>
                 <Select
@@ -428,8 +433,8 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                   <MenuItem value="asc">Oldest First</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         )}
       </Paper>
     );

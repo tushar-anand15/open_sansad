@@ -1,4 +1,4 @@
-import { format, formatDistance, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 // Date formatters
 export function fDate(date: string | Date, newFormat?: string) {

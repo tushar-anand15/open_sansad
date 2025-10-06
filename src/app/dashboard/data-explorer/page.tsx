@@ -11,7 +11,6 @@ import {
   Stack,
   Chip,
   alpha,
-  IconButton,
   Collapse,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';

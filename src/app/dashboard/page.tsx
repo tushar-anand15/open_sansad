@@ -1,6 +1,6 @@
 'use client';
 
-import { Container, Typography, Grid, Card, CardContent, Stack, Box, alpha } from '@mui/material';
+import { Container, Typography, Card, CardContent, Stack, Box, alpha } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { useRouter } from 'next/navigation';
 import DashboardLayout from '../../components/dashboard/DashboardLayout';
