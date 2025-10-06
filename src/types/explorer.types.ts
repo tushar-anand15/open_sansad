@@ -6,15 +6,16 @@ export type QuestionType = 'STARRED' | 'UNSTARRED' | 'SHORT_NOTICE';
 
 export type DebateStatus = 'pending' | 'completed' | 'failed' | 'not_available';
 
-export type DebateCategory = 
+export type LSDebateCategory = 'corrected' | 'uncorrected';
+
+export type RSDebateCategory = 
   | 'corrected' 
-  | 'uncorrected' 
-  | 'synopsis' 
-  | 'text_of_debate'
   | 'verbatim'
   | 'official_qa'
   | 'official_other'
   | 'official';
+
+export type DebateCategory = LSDebateCategory | RSDebateCategory;
 
 export interface LSQuestion {
   id: number;
@@ -51,40 +52,51 @@ export interface RSQuestion {
   updated_at: string;
 }
 
-export interface LSDebate {
+// Debate Session Metadata (not individual debates)
+export interface LSDebateSession {
   id: number;
-  debate_id: string;
-  debate_date: string;
-  debate_type: string;
-  debate_category: DebateCategory;
-  language: string;
-  time_slot: string | null;
+  institution: 'lok_sabha';
   lok_sabha: string;
+  rajya_sabha: string;
   session: string;
-  status: DebateStatus;
-  is_downloaded: boolean;
-  file_size_mb: number | null;
-  page_count: number | null;
-  download_attempts: number;
+  debate_category: DebateCategory;
+  date_count: number;
+  total_debate_days: number;
+  debates_discovered: number;
+  debates_downloaded: number;
+  completion_percentage: number;
+  api_source: string;
+  date_range_start: string | null;
+  date_range_end: string | null;
+  date_range_formatted: string | null;
+  is_complete: boolean;
+  discovery_success: boolean;
   created_at: string;
   updated_at: string;
+  last_fetched: string | null;
 }
 
-export interface RSDebate {
+export interface RSDebateSession {
   id: number;
-  debate_id: string;
-  debate_date: string;
-  debate_type: string;
-  debate_category: DebateCategory;
-  language: string;
+  institution: 'rajya_sabha';
+  lok_sabha: string;
+  rajya_sabha: string;
   session: string;
-  status: DebateStatus;
-  is_downloaded: boolean;
-  file_size_mb: number | null;
-  page_count: number | null;
-  download_attempts: number;
+  debate_category: DebateCategory;
+  date_count: number;
+  total_debate_days: number;
+  debates_discovered: number;
+  debates_downloaded: number;
+  completion_percentage: number;
+  api_source: string;
+  date_range_start: string | null;
+  date_range_end: string | null;
+  date_range_formatted: string | null;
+  is_complete: boolean;
+  discovery_success: boolean;
   created_at: string;
   updated_at: string;
+  last_fetched: string | null;
 }
 
 export interface Pagination {
@@ -120,10 +132,7 @@ export interface DebateFilters {
   lok_sabha?: string;
   session?: string;
   debate_category?: DebateCategory;
-  status?: DebateStatus;
-  language?: string;
-  date_from?: string;
-  date_to?: string;
+  is_complete?: boolean;
   sort_by?: string;
   order?: 'asc' | 'desc';
   limit?: number;
@@ -145,8 +154,6 @@ export interface DebatesMetadata {
   lok_sabhas?: string[];
   sessions: string[];
   debate_categories: DebateCategory[];
-  languages: string[];
-  statuses: DebateStatus[];
   date_range: {
     min: string;
     max: string;
@@ -162,20 +169,22 @@ export interface QuestionsStatistics {
 }
 
 export interface DebatesStatistics {
-  total_debates: number;
-  completed: number;
-  pending: number;
-  failed: number;
+  total_sessions: number;
+  total_debate_days: number;
+  total_debates_discovered: number;
+  total_debates_downloaded: number;
+  complete_sessions: number;
 }
 
 export interface ExplorerResponse<T> {
   status: string;
   data: {
     questions?: T[];
-    debates?: T[];
+    debate_sessions?: T[];
     pagination: Pagination;
   };
   applied_filters?: Record<string, any>;
+  note?: string;
 }
 
 export interface MetadataResponse {

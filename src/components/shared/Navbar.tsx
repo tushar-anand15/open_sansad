@@ -66,9 +66,9 @@ export default function Navbar({ transparent = false }: NavbarProps) {
         elevation={isTransparent ? 0 : 2}
         sx={{
           bgcolor: isTransparent
-            ? 'transparent'
+            ? alpha(theme.palette.common.black, 0.3)
             : alpha(theme.palette.background.paper, 0.95),
-          backdropFilter: isTransparent ? 'none' : 'blur(8px)',
+          backdropFilter: 'blur(8px)',
           borderBottom: isTransparent
             ? 'none'
             : `1px solid ${alpha(theme.palette.divider, 0.1)}`,

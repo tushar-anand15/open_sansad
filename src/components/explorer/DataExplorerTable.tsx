@@ -43,8 +43,8 @@ import {
   ExplorerMode,
   LSQuestion,
   RSQuestion,
-  LSDebate,
-  RSDebate,
+  LSDebateSession,
+  RSDebateSession,
   QuestionFilters,
   DebateFilters,
   QuestionsMetadata,
@@ -68,7 +68,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
   const { enqueueSnackbar } = useSnackbar();
   
   // Data state
-  const [data, setData] = useState<(LSQuestion | RSQuestion | LSDebate | RSDebate)[]>([]);
+  const [data, setData] = useState<(LSQuestion | RSQuestion | LSDebateSession | RSDebateSession)[]>([]);
   const [metadata, setMetadata] = useState<QuestionsMetadata | DebatesMetadata | null>(null);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(false);
@@ -77,7 +77,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
   const [filters, setFilters] = useState<QuestionFilters | DebateFilters>({
     limit: 50,
     offset: 0,
-    sort_by: mode === 'questions' ? 'date' : 'debate_date',
+    sort_by: mode === 'questions' ? 'date' : 'lok_sabha_number',
     order: 'desc',
   });
 
@@ -122,10 +122,10 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
       } else {
         if (institution === 'lok_sabha') {
           response = await parliamentService.exploreLSDebates(filters as DebateFilters);
-          setData(response.data.debates || []);
+          setData(response.data.debate_sessions || []);
         } else {
           response = await parliamentService.exploreRSDebates(filters as DebateFilters);
-          setData(response.data.debates || []);
+          setData(response.data.debate_sessions || []);
         }
       }
 
@@ -174,7 +174,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
     setFilters({
       limit: 50,
       offset: 0,
-      sort_by: mode === 'questions' ? 'date' : 'debate_date',
+      sort_by: mode === 'questions' ? 'date' : 'lok_sabha_number',
       order: 'desc',
     });
   };
@@ -185,22 +185,52 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
     const debatesMetadata = metadata as DebatesMetadata;
 
     return (
-      <Paper sx={{ p: 3, mb: 3, bgcolor: alpha(themeColors.bg, 0.5), border: `1px solid ${alpha(themeColors.primary, 0.2)}` }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" sx={{ color: themeColors.dark, fontWeight: 600 }}>
-            Filters
-          </Typography>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 3, 
+          mb: 3, 
+          bgcolor: 'background.paper',
+          border: `1px solid`,
+          borderColor: 'divider',
+          borderRadius: 2,
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <FilterList sx={{ color: themeColors.primary, fontSize: 20 }} />
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Filters
+            </Typography>
+          </Stack>
           <Stack direction="row" spacing={1}>
             <Button
               size="small"
               startIcon={<Refresh />}
               onClick={handleReset}
-              sx={{ color: themeColors.primary }}
+              variant="outlined"
+              sx={{ 
+                borderColor: alpha(themeColors.primary, 0.3),
+                color: themeColors.primary,
+                '&:hover': {
+                  borderColor: themeColors.primary,
+                  bgcolor: alpha(themeColors.primary, 0.04),
+                },
+              }}
             >
               Reset
             </Button>
-            <IconButton size="small" onClick={() => setShowFilters(!showFilters)}>
-              <FilterList sx={{ color: themeColors.primary }} />
+            <IconButton 
+              size="small" 
+              onClick={() => setShowFilters(!showFilters)}
+              sx={{
+                border: `1px solid ${alpha(themeColors.primary, 0.3)}`,
+                '&:hover': {
+                  bgcolor: alpha(themeColors.primary, 0.04),
+                },
+              }}
+            >
+              <FilterList sx={{ color: themeColors.primary, fontSize: 18 }} />
             </IconButton>
           </Stack>
         </Box>
@@ -238,9 +268,9 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
 
             {/* Lok Sabha filter (LS only) */}
             {institution === 'lok_sabha' && questionsMetadata?.lok_sabhas && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Lok Sabha</InputLabel>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Lok Sabha</InputLabel>
                   <Select
                     value={(filters as QuestionFilters).lok_sabha || ''}
                     onChange={(e) => handleFilterChange('lok_sabha', e.target.value)}
@@ -249,7 +279,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     <MenuItem value="">All</MenuItem>
                     {questionsMetadata.lok_sabhas.map((ls) => (
                       <MenuItem key={ls} value={ls}>
-                        {ls}
+                        LS {ls}
                       </MenuItem>
                     ))}
                   </Select>
@@ -259,9 +289,9 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
 
             {/* Session filter */}
             {metadata && 'sessions' in metadata && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Session</InputLabel>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Session</InputLabel>
                   <Select
                     value={filters.session || ''}
                     onChange={(e) => handleFilterChange('session', e.target.value)}
@@ -280,13 +310,13 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
 
             {/* Question Type (Questions mode) */}
             {mode === 'questions' && questionsMetadata?.question_types && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Question Type</InputLabel>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Type</InputLabel>
                   <Select
                     value={(filters as QuestionFilters).question_type || ''}
                     onChange={(e) => handleFilterChange('question_type', e.target.value)}
-                    label="Question Type"
+                    label="Type"
                   >
                     <MenuItem value="">All</MenuItem>
                     {questionsMetadata.question_types.map((type) => (
@@ -301,9 +331,9 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
 
             {/* Debate Category (Debates mode) */}
             {mode === 'debates' && debatesMetadata?.debate_categories && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Category</InputLabel>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Category</InputLabel>
                   <Select
                     value={(filters as DebateFilters).debate_category || ''}
                     onChange={(e) => handleFilterChange('debate_category', e.target.value)}
@@ -312,7 +342,7 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     <MenuItem value="">All</MenuItem>
                     {debatesMetadata.debate_categories.map((cat) => (
                       <MenuItem key={cat} value={cat}>
-                        {cat}
+                        {cat.charAt(0).toUpperCase() + cat.slice(1)}
                       </MenuItem>
                     ))}
                   </Select>
@@ -320,22 +350,19 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
               </Grid>
             )}
 
-            {/* Status (Debates mode) */}
-            {mode === 'debates' && debatesMetadata?.statuses && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Status</InputLabel>
+            {/* Is Complete (Debates mode) */}
+            {mode === 'debates' && (
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Status</InputLabel>
                   <Select
-                    value={(filters as DebateFilters).status || ''}
-                    onChange={(e) => handleFilterChange('status', e.target.value)}
+                    value={(filters as DebateFilters).is_complete === undefined ? '' : (filters as DebateFilters).is_complete ? 'true' : 'false'}
+                    onChange={(e) => handleFilterChange('is_complete', e.target.value === '' ? undefined : e.target.value === 'true')}
                     label="Status"
                   >
                     <MenuItem value="">All</MenuItem>
-                    {debatesMetadata.statuses.map((status) => (
-                      <MenuItem key={status} value={status}>
-                        {status}
-                      </MenuItem>
-                    ))}
+                    <MenuItem value="true">Complete</MenuItem>
+                    <MenuItem value="false">Incomplete</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
@@ -343,26 +370,26 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
 
             {/* Has PDF (Questions only) */}
             {mode === 'questions' && (
-              <Grid item xs={12} sm={6} md={3}>
-                <FormControl fullWidth size="small">
-                  <InputLabel>Has PDF</InputLabel>
+              <Grid item xs={12} sm={6} md={2.4}>
+                <FormControl fullWidth size="small" sx={{ minWidth: 120 }}>
+                  <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>PDF</InputLabel>
                   <Select
                     value={(filters as QuestionFilters).has_pdf === undefined ? '' : (filters as QuestionFilters).has_pdf ? 'true' : 'false'}
                     onChange={(e) => handleFilterChange('has_pdf', e.target.value === 'true')}
-                    label="Has PDF"
+                    label="PDF"
                   >
                     <MenuItem value="">All</MenuItem>
-                    <MenuItem value="true">Yes</MenuItem>
-                    <MenuItem value="false">No</MenuItem>
+                    <MenuItem value="true">With PDF</MenuItem>
+                    <MenuItem value="false">No PDF</MenuItem>
                   </Select>
                 </FormControl>
               </Grid>
             )}
 
             {/* Sort By */}
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Sort By</InputLabel>
+            <Grid item xs={12} sm={6} md={2.4}>
+              <FormControl fullWidth size="small" sx={{ minWidth: 180 }}>
+                <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Sort By</InputLabel>
                 <Select
                   value={filters.sort_by || ''}
                   onChange={(e) => handleFilterChange('sort_by', e.target.value)}
@@ -371,15 +398,17 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                   {mode === 'questions' ? (
                     <>
                       <MenuItem value="date">Date</MenuItem>
-                      <MenuItem value="question_number">Question Number</MenuItem>
+                      <MenuItem value="question_number">Question #</MenuItem>
                       <MenuItem value="ministry">Ministry</MenuItem>
-                      <MenuItem value="question_type">Question Type</MenuItem>
+                      <MenuItem value="question_type">Type</MenuItem>
                     </>
                   ) : (
                     <>
-                      <MenuItem value="debate_date">Debate Date</MenuItem>
-                      <MenuItem value="status">Status</MenuItem>
-                      <MenuItem value="created_at">Created At</MenuItem>
+                      <MenuItem value="lok_sabha_number">LS Number</MenuItem>
+                      <MenuItem value="session_number">Session</MenuItem>
+                      <MenuItem value="total_debate_days">Debate Days</MenuItem>
+                      <MenuItem value="debates_discovered">Discovered</MenuItem>
+                      <MenuItem value="created_at">Created</MenuItem>
                     </>
                   )}
                 </Select>
@@ -387,9 +416,9 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
             </Grid>
 
             {/* Sort Order */}
-            <Grid item xs={12} sm={6} md={3}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Order</InputLabel>
+            <Grid item xs={12} sm={6} md={2.4}>
+              <FormControl fullWidth size="small" sx={{ minWidth: 140 }}>
+                <InputLabel sx={{ bgcolor: 'background.paper', px: 0.5 }}>Order</InputLabel>
                 <Select
                   value={filters.order || 'desc'}
                   onChange={(e) => handleFilterChange('order', e.target.value)}
@@ -505,45 +534,53 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
     );
   };
 
-  // Render Debates Table
+  // Render Debates Table (Session Metadata)
   const renderDebatesTable = () => {
-    const debates = data as (LSDebate | RSDebate)[];
+    const debateSessions = data as (LSDebateSession | RSDebateSession)[];
 
     return (
       <TableContainer component={Paper} sx={{ boxShadow: 2 }}>
         <Table>
           <TableHead sx={{ bgcolor: alpha(themeColors.primary, 0.1) }}>
             <TableRow>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Date</TableCell>
+              {institution === 'lok_sabha' && (
+                <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>LS</TableCell>
+              )}
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Session</TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Category</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Language</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="right">
-                Size (MB)
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }}>Date Range</TableCell>
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
+                Debate Days
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
-                Pages
+                Discovered
               </TableCell>
               <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
                 Downloaded
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
+                Progress
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, color: themeColors.dark }} align="center">
+                Complete
               </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
+                <TableCell colSpan={institution === 'lok_sabha' ? 9 : 8} align="center" sx={{ py: 8 }}>
                   <CircularProgress sx={{ color: themeColors.primary }} />
                 </TableCell>
               </TableRow>
-            ) : debates.length === 0 ? (
+            ) : debateSessions.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 8 }}>
-                  <Typography color="text.secondary">No debates found</Typography>
+                <TableCell colSpan={institution === 'lok_sabha' ? 9 : 8} align="center" sx={{ py: 8 }}>
+                  <Typography color="text.secondary">No debate sessions found</Typography>
                 </TableCell>
               </TableRow>
             ) : (
-              debates.map((d) => (
+              debateSessions.map((d) => (
                 <TableRow
                   key={d.id}
                   hover
@@ -554,9 +591,16 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     },
                   }}
                 >
+                  {institution === 'lok_sabha' && (
+                    <TableCell>
+                      <Typography variant="body2" fontWeight={600}>
+                        {d.lok_sabha}
+                      </Typography>
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Typography variant="body2" fontWeight={600}>
-                      {d.debate_date}
+                      {d.session}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -571,31 +615,36 @@ export default function DataExplorerTable({ institution, mode, themeColors }: Da
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2">{d.language.toUpperCase()}</Typography>
+                    <Typography variant="body2" sx={{ maxWidth: 200 }}>
+                      {d.date_range_formatted || '-'}
+                    </Typography>
                   </TableCell>
-                  <TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2" fontWeight={600}>
+                      {d.total_debate_days}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2">{d.debates_discovered}</Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2">{d.debates_downloaded}</Typography>
+                  </TableCell>
+                  <TableCell align="center">
                     <Chip
-                      label={d.status}
+                      label={`${d.completion_percentage.toFixed(1)}%`}
                       size="small"
                       color={
-                        d.status === 'completed'
+                        d.completion_percentage === 100
                           ? 'success'
-                          : d.status === 'failed'
-                          ? 'error'
+                          : d.completion_percentage > 0
+                          ? 'warning'
                           : 'default'
                       }
                     />
                   </TableCell>
-                  <TableCell align="right">
-                    <Typography variant="body2">
-                      {d.file_size_mb ? d.file_size_mb.toFixed(2) : '-'}
-                    </Typography>
-                  </TableCell>
                   <TableCell align="center">
-                    <Typography variant="body2">{d.page_count || '-'}</Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {d.is_downloaded ? (
+                    {d.is_complete ? (
                       <CheckCircle sx={{ color: themeColors.primary, fontSize: 20 }} />
                     ) : (
                       <Cancel sx={{ color: 'text.disabled', fontSize: 20 }} />
