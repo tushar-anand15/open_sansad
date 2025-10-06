@@ -1,12 +1,8 @@
 # OpenSansad Frontend
 
-**Production-Grade Parliamentary Data Platform**
+Production-grade parliamentary data platform built with Next.js 14, TypeScript, and Material-UI.
 
-Built with Next.js 14, TypeScript, Material-UI, and following OpenSansad design principles.
-
----
-
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Install dependencies
@@ -20,11 +16,9 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000)
+Application runs at `http://localhost:3000`
 
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 opensansad-frontend/
@@ -98,77 +92,123 @@ opensansad-frontend/
 └── package.json                       # Dependencies
 ```
 
----
+## Technical Stack
 
-## 🎨 Design System
+**Core Framework:**
+- Next.js 14 (App Router)
+- React 18
+- TypeScript 5
+
+**UI Library:**
+- Material-UI v5
+- Framer Motion (animations)
+
+**State Management:**
+- React Context API
+- React Hook Form (forms)
+
+**HTTP & API:**
+- Axios with interceptors
+- Token-based authentication
+
+**Development:**
+- ESLint
+- TypeScript strict mode
+
+## Design System
 
 ### Color Palette
 
-**Primary:** Muted Brick (`#B55A3C`) - Authority and heritage  
-**Secondary:** Soft Mustard (`#E6C07C`) - Warmth and accessibility  
-**Background:** Off-white (`#FAF5EE`) - Warm, approachable feel
+```typescript
+PRIMARY = '#B55A3C'    // Muted brick
+SECONDARY = '#E6C07C'  // Soft mustard
+BACKGROUND = '#FAF5EE' // Off-white
+SUCCESS = '#7A8F6F'    // Sage green
+```
 
 ### Typography
 
-**Primary Font:** Inter / Source Sans Pro (sans-serif)  
-**Secondary Font:** Merriweather / Lora (serif for gravitas)
+- Primary: Inter, Source Sans Pro
+- Secondary: Merriweather, Lora (headings)
 
-### Design Principles
+### Component Architecture
 
-- **Minimalism with Purpose** - Every element serves a function
-- **Gravitas with Warmth** - Authoritative yet approachable
-- **Consistency & Modularity** - Reusable components
-- **Performance & Accessibility** - WCAG AA compliant
+All components follow Material-UI theme system. No hardcoded colors or spacing values. Use theme tokens exclusively:
+- `theme.palette.*` for colors
+- `theme.spacing()` for spacing
+- `theme.breakpoints.*` for responsive design
 
----
+## Authentication
 
-## 🔐 Authentication
+Token-based authentication with Django backend:
 
-The app uses token-based authentication with Django backend:
+1. User authenticates via `/login` or `/signup`
+2. Backend returns authentication token
+3. Token stored in localStorage (`parliament_token` key)
+4. All API requests include header: `Authorization: Token <token>`
 
-1. Users register/login via `/auth/signup` or `/auth/login`
-2. Backend returns a token
-3. Token stored in localStorage
-4. Token sent in `Authorization: Token <token>` header for all API requests
+### Authentication Flow
 
----
+```typescript
+// Login
+const { token } = await authService.login(username, password);
+localStorage.setItem('parliament_token', token);
 
-## 📡 API Integration
+// Logout
+await authService.logout();
+localStorage.removeItem('parliament_token');
 
-The app connects to a Django backend at `http://localhost:8000/api`
+// Protected Routes
+<AuthGuard>{children}</AuthGuard>  // Redirects to /login if not authenticated
+<GuestGuard>{children}</GuestGuard>  // Redirects to /dashboard if authenticated
+```
 
-**Key Endpoints:**
-- `POST /auth/register/` - Create account
-- `POST /auth/login/` - Login
-- `GET /auth/profile/` - Get user profile
-- `GET /questions/ls/questions/` - Lok Sabha questions
-- `GET /debates/` - Parliamentary debates
-- See `FRONTEND_INTEGRATION_GUIDE.md` for complete API docs
+## API Integration
 
----
+Backend base URL: `http://localhost:8000/api`
 
-## 🧩 Key Features
+### Core Endpoints
 
-### ✅ Implemented
+```
+POST   /auth/register/              Create new user account
+POST   /auth/login/                 Authenticate user
+POST   /auth/logout/                Invalidate token
+GET    /auth/profile/               Get user profile
 
-- **Authentication** - Login, signup, logout with token management
-- **Dashboard** - Collapsible sidebar navigation with hamburger menu
-- **Profile Page** - User information and usage statistics
-- **Responsive Design** - Mobile, tablet, and desktop layouts
-- **Theme System** - OpenSansad color palette with warm, earthy tones
-- **Loading States** - Skeletons and progress indicators
-- **Empty States** - Graceful handling of missing data
-- **Error Handling** - Comprehensive error management
+GET    /questions/ls/questions/     Lok Sabha questions list
+GET    /questions/ls/stats/         LS statistics
+GET    /questions/rs/master-data/   Rajya Sabha questions
 
-### 🚧 Placeholder Pages (Ready for Implementation)
+GET    /debates/                    Parliamentary debates
+GET    /debates/statistics/         Debate statistics
 
-- **Data Explorer** - Parliamentary data browser
-- **SansadBuddy** - AI chatbot interface
-- **Settings** - User preferences
+GET    /explorer/ls/questions/      LS Questions Explorer (with filters)
+GET    /explorer/rs/questions/      RS Questions Explorer
+GET    /explorer/ls/debates/        LS Debates Explorer
+GET    /explorer/rs/debates/        RS Debates Explorer
+GET    /explorer/metadata/questions/ Filter metadata
+GET    /explorer/metadata/debates/   Debate metadata
+```
 
----
+See `/docs/FRONTEND_INTEGRATION_GUIDE.md` and `/docs/DATA_EXPLORER_INTEGRATION.md` for complete API documentation.
 
-## 🛠️ Development
+## Features
+
+**Implemented:**
+- Token-based authentication with auto-redirect
+- Dashboard with collapsible sidebar navigation
+- Data Explorer with advanced filtering and pagination
+- User profile and settings pages
+- Responsive design (mobile/tablet/desktop)
+- Loading states and error handling
+- Empty state components
+
+**In Development:**
+- SansadBuddy AI chat interface
+- Data export functionality
+- Advanced search with filters
+
+## Development
 
 ```bash
 # Start development server
@@ -187,91 +227,124 @@ npm run lint
 npx tsc --noEmit
 ```
 
----
+## Key Dependencies
 
-## 📦 Dependencies
+```json
+{
+  "next": "^14.0.0",
+  "react": "^18.0.0",
+  "typescript": "^5.0.0",
+  "@mui/material": "^5.14.0",
+  "@mui/icons-material": "^5.14.0",
+  "react-hook-form": "^7.48.0",
+  "yup": "^1.3.0",
+  "axios": "^1.6.0",
+  "notistack": "^3.0.0",
+  "framer-motion": "^10.16.0"
+}
+```
 
-### Core
-- **Next.js 14** - React framework with App Router
-- **TypeScript** - Type safety
-- **Material-UI v5** - Component library
+## Code Organization
 
-### Forms & Validation
-- **React Hook Form** - Form state management
-- **Yup** - Schema validation
+### Directory Naming
+- `kebab-case` for directories: `data-explorer/`, `sansad-buddy/`
+- `PascalCase` for React components: `DataExplorerTable.tsx`
+- `camelCase` for utilities: `formatters.ts`, `auth.service.ts`
 
-### HTTP & State
-- **Axios** - HTTP client
-- **Notistack** - Toast notifications
+### Component Guidelines
+- Maximum 300 lines per component
+- Extract reusable logic into hooks
+- Use TypeScript strict mode
+- Export types alongside components
 
-### Utilities
-- **date-fns** - Date formatting
-- **lodash** - Utility functions
-- **framer-motion** - Animations
+### State Management
+- Context API for global state (auth, theme)
+- React Hook Form for form state
+- Local state for component-specific data
 
----
+### Styling
+- Use MUI's `sx` prop for inline styles
+- Theme tokens only, no hardcoded values
+- Responsive breakpoints: `{ xs, sm, md, lg, xl }`
 
-## 🎯 Next Steps
+## Environment Variables
 
-### Phase 1: Data Explorer (Week 1-2)
-- [ ] Create filter panel (Lok Sabha, Session, Date range)
-- [ ] Build results table with pagination
-- [ ] Add search functionality
-- [ ] Implement detail view for questions/debates
-- [ ] Add export to CSV
-
-### Phase 2: SansadBuddy Chat (Week 2-3)
-- [ ] Create chat interface
-- [ ] Implement message bubbles (user/bot)
-- [ ] Add streaming support (WebSocket)
-- [ ] Display source citations
-- [ ] Add chat history
-
-### Phase 3: Polish & Deploy (Week 3-4)
-- [ ] Add loading skeletons everywhere
-- [ ] Implement error boundaries
-- [ ] Mobile responsive testing
-- [ ] Performance optimization
-- [ ] Deploy to Vercel/AWS
-
----
-
-## 🎨 Design Guidelines
-
-Refer to these docs in the `docs/` folder:
-- `OPENSANSAD_DESIGN_STYLE_GUIDE.md` - Complete design system
-- `DASHBOARD_DESIGN_PRINCIPLES_GUIDE.md` - Dashboard patterns
-- `SIDEBAR_NAVIGATION_PATTERN_GUIDE.md` - Navigation patterns
-- `FORMS_QUALITY_SUMMARY.md` - Form best practices
-
----
-
-## 📝 Environment Variables
-
-Create `.env.local` file:
+Required environment variables in `.env.local`:
 
 ```bash
 NEXT_PUBLIC_API_URL=http://localhost:8000/api
 NEXT_PUBLIC_API_WS_URL=ws://localhost:8000/ws
 ```
 
----
+## Type System
 
-## 🤝 Contributing
+### Core Types
 
-1. Follow TypeScript strict mode
-2. Use MUI theme system (no hardcoded colors)
-3. Follow file naming conventions
-4. Add proper types for all functions
-5. Keep components under 300 lines
-6. Write descriptive commit messages
+```typescript
+// Authentication
+interface User {
+  id: number;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+}
 
----
+interface AuthState {
+  isAuthenticated: boolean;
+  isInitialized: boolean;
+  user: User | null;
+}
 
-## 📄 License
+// API Response
+interface PaginatedResponse<T> {
+  status: string;
+  data: T;
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_next: boolean;
+  };
+}
 
-[Your License Here]
+// Parliamentary Data
+interface LSQuestion {
+  id: number;
+  question_number: string;
+  subjects: string;
+  question_type: 'STARRED' | 'UNSTARRED' | 'SHORT_NOTICE';
+  ministry: string;
+  date: string;
+  lok_sabha: string;
+  session: string;
+  has_pdf: boolean;
+  has_answer: boolean;
+}
+```
 
----
+See `/src/types/` for complete type definitions.
 
-**Built with ❤️ for democracy**
+## Documentation
+
+Technical documentation in `/docs/`:
+- `FRONTEND_INTEGRATION_GUIDE.md` - Complete API reference
+- `DATA_EXPLORER_INTEGRATION.md` - Explorer endpoints and usage
+- `OPENSANSAD_DESIGN_STYLE_GUIDE.md` - Design system specifications
+- `DASHBOARD_DESIGN_PRINCIPLES_GUIDE.md` - Dashboard patterns
+- `FORMS_QUALITY_SUMMARY.md` - Form implementation guide
+
+## Deployment
+
+```bash
+# Production build
+npm run build
+
+# Preview production build locally
+npm start
+
+# Build output in `.next/` directory
+# Static assets in `.next/static/`
+```
+
+Deploy to Vercel, AWS, or any Node.js hosting platform supporting Next.js 14.
